@@ -9,6 +9,20 @@ export class RoomieSDK {
 
   init(): void {
     this.onListenMsg();
+    this.injectScript();
+  }
+
+  injectScript(): void {
+    if (typeof document === 'undefined') return;
+    const url = '//file.ljcdn.com/fee/index.js';
+    if (document.querySelector(`script[src="${url}"]`)) return;
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = true;
+    const target = document.head || document.body;
+    if (target) {
+      target.appendChild(script);
+    }
   }
 
   actionSendMsg(data: any): Promise<void> {

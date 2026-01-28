@@ -1,76 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export interface RoomieSDKOptions {
-  env?: 'testing' | 'production';
-  ucid?: string;
-}
-
 export class RoomieSDK {
   private queStore: Record<string, any[]> = {};
-  private options?: RoomieSDKOptions;
 
-  constructor(options?: RoomieSDKOptions) {
-    this.options = options;
-    this.init(options);
+  constructor() {
+    this.init();
   }
 
-  init(options?: RoomieSDKOptions): void {
-    if (options) {
-      this.options = { ...this.options, ...options };
-    }
+  init(): void {
     this.onListenMsg();
-    this.injectScript();
-  }
-
-  injectScript(): void {
-    if (typeof document === 'undefined') return;
-    const url = '//file.ljcdn.com/fee/index.js';
-    if (document.querySelector(`script[src="${url}"]`)) return;
-    const script = document.createElement('script');
-    script.src = url;
-    script.async = true;
-    script.onload = () => {
-      const dt = (window as any).dt;
-      if (dt) {
-        const getEnv = () => {
-          if (this.options?.env) return this.options.env;
-          if (
-            window.location.hostname.includes('test') ||
-            window.location.hostname.includes('preview')
-          ) {
-            return 'testing';
-          } else {
-            return 'production';
-          }
-        };
-        const ucid = this.options?.ucid || window.localStorage.getItem('ucid');
-        dt.set({
-          pid: 'roomie',
-          env: getEnv(),
-          ucid: ucid,
-          record: {
-            spa: true,
-            time_on_page: true,
-            performance: true,
-            js_error: true,
-            js_error_report_config: {
-              ERROR_RUNTIME: true,
-              ERROR_SCRIPT: true,
-              ERROR_STYLE: true,
-              ERROR_IMAGE: false,
-              ERROR_AUDIO: false,
-              ERROR_VIDEO: false,
-              ERROR_CONSOLE: false,
-              ERROR_TRY_CATCH: true,
-            },
-          },
-        });
-      }
-    };
-    const target = document.head || document.body;
-    if (target) {
-      target.appendChild(script);
-    }
   }
 
   actionSendMsg(data: any): Promise<void> {

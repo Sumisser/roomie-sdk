@@ -1,13 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+export interface RoomieSDKOptions {
+  env?: 'testing' | 'production';
+  ucid?: string;
+}
+
 export class RoomieSDK {
   private queStore: Record<string, any[]> = {};
+  private options?: RoomieSDKOptions;
 
-  constructor() {
-    this.init();
+  constructor(options?: RoomieSDKOptions) {
+    this.options = options;
+    this.init(options);
   }
 
-  init(): void {
+  init(options?: RoomieSDKOptions): void {
+    if (options) {
+      this.options = { ...this.options, ...options };
+    }
     this.onListenMsg();
     this.injectScript();
   }
@@ -23,6 +33,7 @@ export class RoomieSDK {
       const dt = (window as any).dt;
       if (dt) {
         const getEnv = () => {
+          if (this.options?.env) return this.options.env;
           if (
             window.location.hostname.includes('test') ||
             window.location.hostname.includes('preview')
@@ -32,18 +43,13 @@ export class RoomieSDK {
             return 'production';
           }
         };
+        const ucid = this.options?.ucid || window.localStorage.getItem('ucid');
         dt.set({
           pid: 'roomie',
           env: getEnv(),
-          ucid: window.localStorage.getItem('ucid'),
+          ucid: ucid,
           record: {
             spa: true,
-            white_screen: {
-              target: '#root',
-              wait_ms: 3000,
-              stable_ms: 3000,
-              timeout_ms: 5000,
-            },
             time_on_page: true,
             performance: true,
             js_error: true,
@@ -56,11 +62,6 @@ export class RoomieSDK {
               ERROR_VIDEO: false,
               ERROR_CONSOLE: false,
               ERROR_TRY_CATCH: true,
-              checkErrorNeedReport: (desc: any) => {
-                const notReportKeyWords: string[] = [];
-                const hasKeyWord = notReportKeyWords.some((item) => desc.indexOf(item) !== -1);
-                return !hasKeyWord;
-              },
             },
           },
         });

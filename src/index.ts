@@ -19,6 +19,53 @@ export class RoomieSDK {
     const script = document.createElement('script');
     script.src = url;
     script.async = true;
+    script.onload = () => {
+      const dt = (window as any).dt;
+      if (dt) {
+        const getEnv = () => {
+          if (
+            window.location.hostname.includes('test') ||
+            window.location.hostname.includes('preview')
+          ) {
+            return 'testing';
+          } else {
+            return 'production';
+          }
+        };
+        dt.set({
+          pid: 'roomie',
+          env: getEnv(),
+          ucid: window.localStorage.getItem('ucid'),
+          record: {
+            spa: true,
+            white_screen: {
+              target: '#root',
+              wait_ms: 3000,
+              stable_ms: 3000,
+              timeout_ms: 5000,
+            },
+            time_on_page: true,
+            performance: true,
+            js_error: true,
+            js_error_report_config: {
+              ERROR_RUNTIME: true,
+              ERROR_SCRIPT: true,
+              ERROR_STYLE: true,
+              ERROR_IMAGE: false,
+              ERROR_AUDIO: false,
+              ERROR_VIDEO: false,
+              ERROR_CONSOLE: false,
+              ERROR_TRY_CATCH: true,
+              checkErrorNeedReport: (desc: any) => {
+                const notReportKeyWords: string[] = [];
+                const hasKeyWord = notReportKeyWords.some((item) => desc.indexOf(item) !== -1);
+                return !hasKeyWord;
+              },
+            },
+          },
+        });
+      }
+    };
     const target = document.head || document.body;
     if (target) {
       target.appendChild(script);

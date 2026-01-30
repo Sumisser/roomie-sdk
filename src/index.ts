@@ -83,6 +83,7 @@ export class RoomieSDK {
     const { type, sync } = message;
     if (type === 'getData') {
       switch (sync) {
+        case 'sessionInfo':
         case 'userInfo':
         case 'userInfoByPlainText':
         case 'groupInfo':

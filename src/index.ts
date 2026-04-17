@@ -2,6 +2,7 @@
 
 export class RoomieSDK {
   private queStore: Record<string, any[]> = {};
+  private stateChangeCallback?: (data: any) => void;
 
   constructor() {
     this.init();
@@ -79,7 +80,11 @@ export class RoomieSDK {
     return promise;
   }
 
-  handleData(message: any): void {
+  onStateChange(callback: (data: any) => void): void {
+    this.stateChangeCallback = callback;
+  }
+
+  handleData(message: any): boolean {
     const { type, sync } = message;
     if (type === 'getData') {
       switch (sync) {
@@ -93,6 +98,7 @@ export class RoomieSDK {
           if (queue && queue.length) {
             const item = queue.shift();
             item?.resume(message);
+            return true; // 表示这是响应消息，已被处理
           }
           break;
         }
@@ -100,6 +106,7 @@ export class RoomieSDK {
           console.warn('无法处理该回调信息');
       }
     }
+    return false; // 表示这不是响应消息或未被处理
   }
 
   onListenMsg(): void {
@@ -110,7 +117,13 @@ export class RoomieSDK {
           if (event.data && typeof event.data === 'string') {
             try {
               const data = JSON.parse(event.data);
-              this.handleData(data);
+              // handleData 返回 true 表示这是对 asyncGetInfo 等方法的响应
+              const isResponse = this.handleData(data);
+
+              // 只有非响应消息（父页面主动推送的消息）才触发 stateChangeCallback
+              if (!isResponse && this.stateChangeCallback) {
+                this.stateChangeCallback(data);
+              }
             } catch (error) {
               console.error('收到无法解析的数据');
             }

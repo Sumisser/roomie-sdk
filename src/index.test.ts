@@ -118,9 +118,29 @@ describe('RoomieSDK', () => {
     expect(result).toEqual(responseData);
   });
 
-  it('onStateChange should NOT be called for getData messages', () => {
+  it('onMessage should be called for non-response messages', () => {
     const callback = jest.fn();
-    sdk.onStateChange(callback);
+    sdk.onMessage(callback);
+
+    const customMessage = {
+      type: 'customEvent',
+      data: { foo: 'bar' },
+    };
+
+    const messageEvent = new MessageEvent('message', {
+      data: JSON.stringify(customMessage),
+      source: window.parent,
+    });
+
+    // Manually trigger handlers
+    messageHandlers.forEach((handler) => handler(messageEvent));
+
+    expect(callback).toHaveBeenCalledWith(customMessage);
+  });
+
+  it('onMessage should NOT be called for getData messages', () => {
+    const callback = jest.fn();
+    sdk.onMessage(callback);
 
     const getDataMessage = {
       type: 'getData',
@@ -138,4 +158,23 @@ describe('RoomieSDK', () => {
 
     expect(callback).not.toHaveBeenCalled();
   });
+
+  it('subsequent calls to onMessage should overwrite the previous callback', () => {
+    const cb1 = jest.fn();
+    const cb2 = jest.fn();
+    sdk.onMessage(cb1);
+    sdk.onMessage(cb2); // Should overwrite cb1
+
+    const msg = { type: 'test', data: 123 };
+    const event = new MessageEvent('message', {
+      data: JSON.stringify(msg),
+      source: window.parent,
+    });
+
+    messageHandlers.forEach((h) => h(event));
+
+    expect(cb1).not.toHaveBeenCalled();
+    expect(cb2).toHaveBeenCalledWith(msg);
+  });
 });
+

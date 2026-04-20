@@ -2,7 +2,7 @@
 
 export class RoomieSDK {
   private queStore: Record<string, any[]> = {};
-  private stateChangeCallback?: (data: any) => void;
+  private messageCallback?: (data: any) => void;
 
   constructor() {
     this.init();
@@ -82,8 +82,8 @@ export class RoomieSDK {
     return promise;
   }
 
-  onStateChange(callback: (data: any) => void): void {
-    this.stateChangeCallback = callback;
+  onMessage(callback: (data: any) => void): void {
+    this.messageCallback = callback;
   }
 
   handleData(message: any): boolean {
@@ -111,9 +111,9 @@ export class RoomieSDK {
               // handleData 返回 true 表示这是对 asyncGetInfo 等方法的响应
               const isResponse = this.handleData(data);
 
-              // 只有非响应消息（父页面主动推送的消息）才触发 stateChangeCallback
-              if (!isResponse && this.stateChangeCallback) {
-                this.stateChangeCallback(data);
+              // 只有非响应消息（父页面主动推送的消息）才触发监听者
+              if (!isResponse && this.messageCallback) {
+                this.messageCallback(data);
               }
             } catch (error) {
               console.error('收到无法解析的数据');

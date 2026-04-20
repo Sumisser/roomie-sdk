@@ -16,8 +16,8 @@ import { RoomieSDK } from 'roomie-sdk';
 // Initialize the SDK
 const sdk = new RoomieSDK();
 
-// Listen to parent window state changes
-sdk.onStateChange((data) => {
+// Listen to parent window messages
+sdk.onMessage((data) => {
   console.log('Received from parent:', data);
 });
 
@@ -35,14 +35,16 @@ Initializes the SDK and starts listening for messages from the parent window.
 
 ### Methods
 
-#### `onStateChange(callback: (data: any) => void): void`
+#### `onMessage(callback: (data: any) => void): void`
 Listen to messages actively pushed by the parent window.
 
-**Important**: This callback only receives messages **actively pushed** by the parent window. It does NOT receive responses to `asyncGetInfo` or other request methods.
+**Important**: 
+1. This callback only receives messages **actively pushed** by the parent window (not responses to requests).
+2. Calling `onMessage` multiple times will **overwrite** the previous callback.
 
 ```typescript
-sdk.onStateChange((data) => {
-  // Handle parent window state changes
+sdk.onMessage((data) => {
+  // Handle message from parent window
   console.log('Parent pushed:', data);
 });
 ```
@@ -84,20 +86,12 @@ import { RoomieSDK } from 'roomie-sdk';
 // Create SDK instance
 const sdk = new RoomieSDK();
 
-// Register state change callback
-sdk.onStateChange((data) => {
-  console.log('Received from parent:', data);
-  
-  // Handle different message types
-  switch (data.type) {
-    case 'customEvent':
-      handleCustomEvent(data);
-      break;
-    case 'stateUpdate':
-      updateLocalState(data.payload);
-      break;
-    default:
-      console.log('Unknown message type:', data);
+// Register listener
+sdk.onMessage((data) => {
+  if (data.type === 'customEvent') {
+    handleCustomEvent(data);
+  } else if (data.type === 'stateUpdate') {
+    updateLocalState(data.payload);
   }
 });
 ```
@@ -114,14 +108,18 @@ function App() {
 
   useEffect(() => {
     // Listen to parent window messages
-    sdk.onStateChange((data) => {
+    sdk.onMessage((data) => {
       setParentData(data);
-      
-      // Update different states based on message type
       if (data.type === 'userUpdate') {
         // Update user info
       }
     });
+
+    return () => {
+      // Clear listener if needed (e.g. by passing an empty function or nulling it internally)
+      // Since it's a single callback, usually not required unless you want to stop listening completely
+      sdk.onMessage(() => {});
+    };
   }, [sdk]);
 
   return (
@@ -151,7 +149,7 @@ const parentData = ref(null);
 const sdk = new RoomieSDK();
 
 onMounted(() => {
-  sdk.onStateChange((data) => {
+  sdk.onMessage((data) => {
     parentData.value = data;
     handleParentMessage(data);
   });
@@ -210,9 +208,18 @@ class MyApp {
   }
   
   setupMessageListener() {
-    this.sdk.onStateChange((data) => {
+    this.sdk.onMessage((data) => {
       console.log('[MyApp] Received from parent:', data);
-      this.handleParentMessage(data);
+      
+      const { type, payload } = data;
+      switch (type) {
+        case 'init':
+          this.initialize(payload);
+          break;
+        case 'update':
+          this.update(payload);
+          break;
+      }
     });
   }
   
@@ -246,7 +253,7 @@ const app = new MyApp();
 
 ## Message Types
 
-### Messages that trigger `onStateChange`
+### Messages that trigger listeners
 
 ✅ **Parent actively pushed messages** - These will trigger the callback:
 
@@ -279,10 +286,10 @@ const app = new MyApp();
 
 1. **Data Format**: Data sent by the parent window must be JSON-serializable (can be processed by `JSON.stringify` and `JSON.parse`)
 2. **Message Source Validation**: The SDK automatically validates that messages come from the parent window (`event.source === window.parent`)
-3. **Callback Overwrite**: Calling `onStateChange` multiple times will overwrite the previous callback
+3. **Callback Overwrite**: Calling `onMessage` multiple times will overwrite the previous callback. Only one callback can be active at a time.
 4. **Error Handling**: The SDK automatically handles JSON parsing errors; invalid data will log errors to the console
-5. **Response Message Filtering**: ⚠️ **Important** - `onStateChange` only receives messages **actively pushed** by the parent window, NOT responses to `asyncGetInfo` or other request methods
-6. **Compatibility**: `onStateChange` does not affect existing SDK methods like `asyncGetInfo`; both can be used simultaneously
+5. **Response Message Filtering**: ⚠️ **Important** - Listeners only receive messages **actively pushed** by the parent window, NOT responses to `asyncGetInfo` or other request methods
+6. **Compatibility**: `onMessage` does not affect existing SDK methods like `asyncGetInfo`; both can be used simultaneously
 
 ## License
 

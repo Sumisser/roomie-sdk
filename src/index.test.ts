@@ -63,6 +63,7 @@ describe('RoomieSDK', () => {
       JSON.stringify({
         type: 'sendChatMessage',
         payload: { data },
+        source: 'roomie-sdk',
       }),
       '*',
     );
@@ -76,6 +77,7 @@ describe('RoomieSDK', () => {
       JSON.stringify({
         type: 'changeChat',
         payload: { data: activeKey },
+        source: 'roomie-sdk',
       }),
       '*',
     );
@@ -97,6 +99,7 @@ describe('RoomieSDK', () => {
       JSON.stringify({
         type: 'getData',
         sync: syncType,
+        source: 'roomie-sdk',
       }),
       '*',
     );
@@ -113,5 +116,26 @@ describe('RoomieSDK', () => {
     // Verify the promise resolves with the response data
     const result = await promise;
     expect(result).toEqual(responseData);
+  });
+
+  it('onStateChange should NOT be called for getData messages', () => {
+    const callback = jest.fn();
+    sdk.onStateChange(callback);
+
+    const getDataMessage = {
+      type: 'getData',
+      sync: 'userInfo',
+      data: { name: 'User' },
+    };
+
+    const messageEvent = new MessageEvent('message', {
+      data: JSON.stringify(getDataMessage),
+      source: window.parent,
+    });
+
+    // Manually trigger handlers
+    messageHandlers.forEach((handler) => handler(messageEvent));
+
+    expect(callback).not.toHaveBeenCalled();
   });
 });

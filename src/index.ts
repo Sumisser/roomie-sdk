@@ -50,7 +50,6 @@ export class RoomieSDK {
   }
 
   async asyncGetInfo(syncType: string): Promise<any> {
-    this.actionGetInfo(syncType);
     let isResumed = false;
     let resolveFn: (value: any) => void;
 
@@ -77,6 +76,9 @@ export class RoomieSDK {
       this.queStore[syncType] = [queueItem];
     }
 
+    // 先入队，再发送请求，确保响应不会在入队前到达
+    this.actionGetInfo(syncType);
+
     return promise;
   }
 
@@ -87,24 +89,13 @@ export class RoomieSDK {
   handleData(message: any): boolean {
     const { type, sync } = message;
     if (type === 'getData') {
-      switch (sync) {
-        case 'sessionInfo':
-        case 'userInfo':
-        case 'userInfoByPlainText':
-        case 'groupInfo':
-        case 'robotInfo':
-        case 'customerInfo': {
-          const queue = this.queStore[sync];
-          if (queue && queue.length) {
-            const item = queue.shift();
-            item?.resume(message);
-            return true; // 表示这是响应消息，已被处理
-          }
-          break;
-        }
-        default:
-          console.warn('无法处理该回调信息');
+      const queue = this.queStore[sync];
+      if (queue && queue.length) {
+        const item = queue.shift();
+        item?.resume(message);
       }
+      // 只要是 getData 类型，都认为是响应消息（或内部协议），不再透传给 onStateChange
+      return true;
     }
     return false; // 表示这不是响应消息或未被处理
   }

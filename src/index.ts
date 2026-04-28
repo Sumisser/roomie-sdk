@@ -41,6 +41,19 @@ export class RoomieSDK {
     await this.actionSendMsg(payload);
   }
 
+  async callout(params: {
+    number: string | number;
+    robotUcCode: string;
+    username?: string;
+    usercode?: string;
+  }): Promise<void> {
+    const payload = {
+      type: 'callout',
+      payload: { data: params },
+    };
+    await this.actionSendMsg(payload);
+  }
+
   actionGetInfo(syncType: string): Promise<void> {
     return new Promise((resolve) => {
       const payload = { type: 'getData', sync: syncType };

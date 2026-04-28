@@ -1,6 +1,6 @@
 {
   "name": "roomie-sdk",
-  "version": "1.1.0-beta.2",
+  "version": "1.1.0-beta.3",
   "description": "A standard Node.js SDK project",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
